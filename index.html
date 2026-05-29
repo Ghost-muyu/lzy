@@ -149,10 +149,11 @@ body {
   filter:drop-shadow(0 0 10px rgba(255,100,150,0.5));
 }
 .photo-bubble {
-  width:100px; height:100px; border-radius:50%;
+  width:80px; height:80px; border-radius:50%;
   border:3px solid rgba(255,160,200,0.75);
   object-fit:cover;
   box-shadow:0 0 25px rgba(255,100,180,0.45);
+  background:rgba(255,100,180,0.1);
 }
 .photo-bubble.popped {
   animation:photoPop 0.6s ease-out forwards !important;
@@ -636,33 +637,23 @@ function startLevel() {
   $('progressWrap').style.display = 'block';
   gameArea.innerHTML = '';
 
-  // 慢速生成：每1.2-1.8秒补充一个，最多8-14个同时在场
-  const spawnRate = Math.max(800, 1800 - currentLevel * 150);
-  const maxOnScreen = 8 + currentLevel * 2;
+  // 慢速生成：每2秒补充一个，最多5-8个同时在场
+  const spawnRate = 2000;
+  const maxOnScreen = 5 + currentLevel;
   spawnTimer = setInterval(() => {
     const existing = gameArea.querySelectorAll('.collectible:not(.popped)').length;
     for (let i = existing; i < maxOnScreen; i++) spawnCollectible();
   }, spawnRate);
 
-  // 初始放6-10个
-  const initial = 6 + currentLevel;
-  for (let i=0; i<initial; i++) setTimeout(()=>spawnCollectible(), i*300);
+  // 初始放4个
+  for (let i=0; i<4; i++) setTimeout(()=>spawnCollectible(), i*500);
 }
 
 // ===== 开始游戏 =====
 function startGame() {
-  const btn = $('startBtn');
-  btn.textContent = '加载中...';
-  btn.disabled = true;
-
-  // 预加载前20张照片
-  preloadBatch(PHOTOS.slice(0, 20), () => {
-    startOverlay.style.display = 'none';
-    currentLevel = 0;
-    startLevel();
-    // 后台继续加载其余照片
-    preloadBatch(PHOTOS.slice(20), null);
-  });
+  startOverlay.style.display = 'none';
+  currentLevel = 0;
+  startLevel();
 }
 
 // ===== 空白处点击 =====
