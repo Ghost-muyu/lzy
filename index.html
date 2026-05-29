@@ -23,9 +23,9 @@ body {
 }
 .bg-photo {
   position:absolute; object-fit:contain;
-  opacity:0.35; border-radius:20px;
-  filter:brightness(1.2) drop-shadow(0 0 10px rgba(255,120,180,0.2));
-  transition:opacity 2s ease;
+  opacity:0.45; border-radius:20px;
+  filter:brightness(1.3) drop-shadow(0 0 12px rgba(255,120,180,0.25));
+  transition:opacity 1s ease;
   pointer-events:none;
   background:rgba(20,5,30,0.3);
 }
@@ -398,19 +398,20 @@ function setupBgPhotos() {
     img.className = 'bg-photo';
     img.src = randomPhoto();
     img.style.animationName = Math.random() > 0.5 ? 'bgFloat1' : 'bgFloat2';
-    img.style.animationDuration = (18 + Math.random() * 16) + 's';
-    img.style.animationDelay = -(Math.random() * 18) + 's';
-    const size = 280 + Math.random() * 350;
+    img.style.animationDuration = (12 + Math.random() * 10) + 's';
+    img.style.animationDelay = -(Math.random() * 12) + 's';
+    const size = 220 + Math.random() * 300;
     img.style.width = size + 'px';
     img.style.top = (Math.random() * 75) + '%';
     img.style.left = (Math.random() * 70) + '%';
-    // 横图竖图都完整展示
-    img.style.maxHeight = '70vh';
+    img.style.maxHeight = '60vh';
     layer.appendChild(img);
-    if (layer.children.length > 10) layer.firstChild.remove();
+    if (layer.children.length > 14) layer.firstChild.remove();
   }
-  for (let i = 0; i < 8; i++) addPhoto();
-  setInterval(addPhoto, 5000);
+  // 页面加载立即放12张
+  for (let i = 0; i < 12; i++) addPhoto();
+  // 每3秒换一张
+  setInterval(addPhoto, 3000);
 }
 
 // ===== 粒子 =====
@@ -431,19 +432,19 @@ function setupParticles() {
 
 // ===== 游戏数据 =====
 const LEVELS = [
-  { name:'初见', date:'2026.3.22', target:12,
+  { name:'初见', date:'2026.3.22', target:16,
     msg:'那一天，我们的故事开始了。\n世界很大，但偏偏让我遇见了你。\n你的名字，从此刻在了我心里。\n每一次想起初见，都会不由自主地微笑。',
     quote:'——《初见》· 3月22日' },
-  { name:'相知', date:'2026.4.5', target:18,
+  { name:'相知', date:'2026.4.5', target:24,
     msg:'每天醒来第一件事，就是看你的消息。\n你发的每一个字，每一张照片，\n都让平凡的日子开出花来。\n我确定，我已经习惯有你了。',
     quote:'——《相知》· 4月初' },
-  { name:'心动', date:'2026.4.20', target:24,
+  { name:'心动', date:'2026.4.20', target:32,
     msg:'你的笑声，是世上最好听的声音。\n你的名字，是我写不腻的诗。\n和你在一起的分分秒秒，\n都像电影里最美的画面，想要永远定格。',
     quote:'——《心动》· 4月中' },
-  { name:'甜蜜', date:'2026.5.5', target:30,
+  { name:'甜蜜', date:'2026.5.5', target:40,
     msg:'有你的日子，每一天都是甜的。\n春天的风，夏天的雨，秋天的月，冬天的雪，\n都不如你轻轻喊我的名字。\n谢谢你，出现在我的生命里。',
     quote:'——《甜蜜》· 5月初' },
-  { name:'永远', date:'2026.5.29', target:36,
+  { name:'永远', date:'2026.5.29', target:48,
     msg:'从3月22日到今天，68天。\n不长不短，却是我人生中最美的68天。\n我们的故事才刚刚开始，\n未来的每一天，都想和你一起走过。',
     quote:'——《永远》· 5月29日' }
 ];
