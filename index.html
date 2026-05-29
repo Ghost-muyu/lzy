@@ -332,18 +332,6 @@ for (let i = 1; i <= 78; i++) {
 }
 const PHOTO_BASE = 'assets/photos/';
 
-// 预加载
-const preloaded = new Set();
-function preloadBatch(batch, onDone) {
-  let count = 0;
-  batch.forEach(fn => {
-    const img = new Image();
-    img.onload = img.onerror = () => { count++; if (count === batch.length) onDone?.(); };
-    img.src = PHOTO_BASE + fn;
-    preloaded.add(fn);
-  });
-}
-
 // 不重复循环用照片
 let photoIdx = 0;
 const usedPhotos = [];
@@ -443,19 +431,19 @@ function setupParticles() {
 
 // ===== 游戏数据 =====
 const LEVELS = [
-  { name:'初见', date:'2026.3.22', target:20,
+  { name:'初见', date:'2026.3.22', target:12,
     msg:'那一天，我们的故事开始了。\n世界很大，但偏偏让我遇见了你。\n你的名字，从此刻在了我心里。\n每一次想起初见，都会不由自主地微笑。',
     quote:'——《初见》· 3月22日' },
-  { name:'相知', date:'2026.4.5', target:30,
+  { name:'相知', date:'2026.4.5', target:18,
     msg:'每天醒来第一件事，就是看你的消息。\n你发的每一个字，每一张照片，\n都让平凡的日子开出花来。\n我确定，我已经习惯有你了。',
     quote:'——《相知》· 4月初' },
-  { name:'心动', date:'2026.4.20', target:40,
+  { name:'心动', date:'2026.4.20', target:24,
     msg:'你的笑声，是世上最好听的声音。\n你的名字，是我写不腻的诗。\n和你在一起的分分秒秒，\n都像电影里最美的画面，想要永远定格。',
     quote:'——《心动》· 4月中' },
-  { name:'甜蜜', date:'2026.5.5', target:50,
+  { name:'甜蜜', date:'2026.5.5', target:30,
     msg:'有你的日子，每一天都是甜的。\n春天的风，夏天的雨，秋天的月，冬天的雪，\n都不如你轻轻喊我的名字。\n谢谢你，出现在我的生命里。',
     quote:'——《甜蜜》· 5月初' },
-  { name:'永远', date:'2026.5.29', target:60,
+  { name:'永远', date:'2026.5.29', target:36,
     msg:'从3月22日到今天，68天。\n不长不短，却是我人生中最美的68天。\n我们的故事才刚刚开始，\n未来的每一天，都想和你一起走过。',
     quote:'——《永远》· 5月29日' }
 ];
@@ -475,47 +463,68 @@ const $ = id => document.getElementById(id);
 const gameArea = $('gameArea');
 const startOverlay = $('startOverlay');
 
-// ===== 生成收集物（全部是照片气泡）=====
+// ===== 生成收集物（爱心为主，偶尔照片）=====
 function spawnCollectible() {
   if (!gameActive) return;
-  const el = document.createElement('img');
+  const isPhoto = Math.random() < 0.15;
 
-  el.src = nextPhoto();
-  el.className = 'collectible photo-bubble';
-  el.style.left = (5 + Math.random() * 80) + '%';
-  el.style.top = (10 + Math.random() * 70) + '%';
-  el.style.animationDuration = (3.5 + Math.random() * 4) + 's';
-
-  const handler = (e) => {
-    e.stopPropagation(); e.preventDefault();
-    collectItem(el);
-  };
-  el.addEventListener('click', handler);
-  el.addEventListener('touchstart', handler, { passive:false });
-
-  gameArea.appendChild(el);
-
-  // 8秒后自动消失
-  setTimeout(() => {
-    if (el.parentNode && !el.classList.contains('popped')) {
-      el.style.opacity = '0'; el.style.transition = 'opacity 0.8s';
-      setTimeout(() => el.remove(), 800);
-    }
-  }, 8000 + Math.random() * 2000);
+  if (isPhoto) {
+    const el = document.createElement('img');
+    el.src = nextPhoto();
+    el.className = 'collectible photo-bubble';
+    el.style.left = (5 + Math.random() * 80) + '%';
+    el.style.top = (10 + Math.random() * 70) + '%';
+    el.style.animationDuration = (4 + Math.random() * 4) + 's';
+    const handler = (e) => {
+      e.stopPropagation(); e.preventDefault();
+      collectItem(el, true);
+    };
+    el.addEventListener('click', handler);
+    el.addEventListener('touchstart', handler, { passive:false });
+    gameArea.appendChild(el);
+    setTimeout(() => {
+      if (el.parentNode && !el.classList.contains('popped')) {
+        el.style.opacity = '0'; el.style.transition = 'opacity 0.8s';
+        setTimeout(() => el.remove(), 800);
+      }
+    }, 10000);
+  } else {
+    const emojis = ['❤️','💕','💗','💖','💝','💘','💓','💞','🫶','💌','💟','❣️','🌹','💐','🎀','🦋'];
+    const el = document.createElement('span');
+    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    el.className = 'collectible heart-item';
+    el.style.left = (3 + Math.random() * 85) + '%';
+    el.style.top = (8 + Math.random() * 75) + '%';
+    el.style.animationDuration = (3 + Math.random() * 3) + 's';
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+    const handler = (e) => {
+      e.stopPropagation(); e.preventDefault();
+      collectItem(el, false);
+    };
+    el.addEventListener('click', handler);
+    el.addEventListener('touchstart', handler, { passive:false });
+    gameArea.appendChild(el);
+    setTimeout(() => {
+      if (el.parentNode && !el.classList.contains('popped')) {
+        el.style.opacity = '0'; el.style.transition = 'opacity 0.6s';
+        setTimeout(() => el.remove(), 600);
+      }
+    }, 6000 + Math.random() * 3000);
+  }
 }
 
-function collectItem(el) {
+function collectItem(el, isPhoto) {
   if (el.classList.contains('popped')) return;
   el.classList.add('popped');
 
   const pop = document.createElement('span');
   pop.className = 'score-pop';
-  pop.textContent = '+1 💕';
+  pop.textContent = isPhoto ? '+3 📸' : '+1 ❤️';
   pop.style.left = el.style.left; pop.style.top = el.style.top;
   gameArea.appendChild(pop);
   setTimeout(() => pop.remove(), 1000);
 
-  score += 1;
+  score += isPhoto ? 3 : 1;
   updateHUD();
   spawnBurst(el);
   setTimeout(() => el.remove(), 500);
@@ -637,16 +646,15 @@ function startLevel() {
   $('progressWrap').style.display = 'block';
   gameArea.innerHTML = '';
 
-  // 慢速生成：每2秒补充一个，最多5-8个同时在场
-  const spawnRate = 2000;
-  const maxOnScreen = 5 + currentLevel;
+  // 保持屏幕上有6-12个泡泡
+  const spawnRate = 800;
+  const maxOnScreen = 6 + currentLevel * 1;
   spawnTimer = setInterval(() => {
     const existing = gameArea.querySelectorAll('.collectible:not(.popped)').length;
     for (let i = existing; i < maxOnScreen; i++) spawnCollectible();
   }, spawnRate);
 
-  // 初始放4个
-  for (let i=0; i<4; i++) setTimeout(()=>spawnCollectible(), i*500);
+  for (let i=0; i<6; i++) setTimeout(()=>spawnCollectible(), i*200);
 }
 
 // ===== 开始游戏 =====
