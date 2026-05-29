@@ -141,6 +141,21 @@ body {
 }
 .btn:active { transform:scale(0.94); }
 
+.music-btn {
+  position:fixed; top:max(16px, env(safe-area-inset-top)); right:16px; z-index:30;
+  width:44px; height:44px; border-radius:50%; border:none;
+  background:rgba(255,100,180,0.2); color:#fff; font-size:22px;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(255,150,200,0.3);
+  transition:all 0.3s ease;
+}
+.music-btn.playing { background:rgba(255,100,180,0.45); animation:musicPulse 2s ease-in-out infinite; }
+@keyframes musicPulse {
+  0%,100% { box-shadow:0 0 10px rgba(255,100,180,0.3); }
+  50% { box-shadow:0 0 25px rgba(255,100,180,0.6); }
+}
+
 .lc-wrap { text-align:center; max-width:380px; width:100%; }
 .lc-emoji { font-size:56px; margin-bottom:8px; }
 .lc-title { font-size:clamp(28px, 6vw, 38px); color:#ff6b9d; margin-bottom:16px; text-shadow:0 0 20px rgba(255,100,150,0.4); }
@@ -191,6 +206,8 @@ body {
 </div>
 
 <div class="game-area" id="gameArea" style="display:none"></div>
+
+<button class="music-btn" id="musicBtn" title="音乐" onclick="toggleMusic()">🎵</button>
 
 <div class="overlay" id="startOverlay">
   <div class="start-screen">
@@ -308,7 +325,7 @@ const gameArea=$('gameArea'), startOverlay=$('startOverlay');
 // ===== 生成收集物 =====
 function spawnCollectible() {
   if (!gameActive) return;
-  const isPhoto = Math.random() < 0.6; // 60%照片，40%爱心
+  const isPhoto = true; // 100%照片
 
   if (isPhoto) {
     const src = nextPhoto(); onScreen.add(src);
@@ -482,6 +499,97 @@ $('startBtn').addEventListener('touchend', (e)=>{ e.preventDefault(); startGame(
 
 setupParticles();
 startLoveWords();
+
+// ===== 背景音乐（内置舒缓钢琴音效）=====
+let musicPlaying = false, audioCtx = null, musicGain = null;
+const musicBtn = document.getElementById('musicBtn');
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0.12;
+  musicGain.connect(audioCtx.destination);
+}
+
+// 简单和弦进行 (C-G-Am-F)，像"情书"一样温暖
+const chords = [
+  [261.63, 329.63, 392.00], // C major
+  [392.00, 493.88, 587.33], // G major
+  [220.00, 261.63, 329.63], // Am
+  [349.23, 440.00, 523.25], // F major
+];
+let chordIdx = 0, noteIdx = 0;
+const melody = [523, 440, 392, 349, 392, 440, 523, 587, 523, 440, 392, 330, 349, 392, 440, 392];
+
+function playNote(freq, startTime, duration, vol) {
+  if (!audioCtx || !musicPlaying) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(vol, startTime + 0.08);
+  gain.gain.linearRampToValueAtTime(vol * 0.5, startTime + duration * 0.7);
+  gain.gain.linearRampToValueAtTime(0, startTime + duration);
+  osc.connect(gain);
+  gain.connect(musicGain);
+  osc.start(startTime);
+  osc.stop(startTime + duration);
+}
+
+let nextPlayTime = 0;
+function scheduleMusic() {
+  if (!musicPlaying || !audioCtx) return;
+
+  const now = audioCtx.currentTime;
+  while (nextPlayTime < now + 0.5) {
+    // 和弦音
+    const chord = chords[chordIdx % chords.length];
+    chord.forEach(f => playNote(f, nextPlayTime, 2.5, 0.06));
+    // 旋律音
+    const melNote = melody[noteIdx % melody.length];
+    playNote(melNote, nextPlayTime + 0.1, 1.8, 0.1);
+    playNote(melNote * 0.5, nextPlayTime + 0.1, 1.8, 0.04); // 低八度和声
+
+    nextPlayTime += 2.0;
+    chordIdx++;
+    noteIdx++;
+  }
+}
+
+let scheduleInterval = null;
+
+function toggleMusic() {
+  initAudio();
+  if (musicPlaying) {
+    musicPlaying = false;
+    musicBtn.textContent = '🎵';
+    musicBtn.classList.remove('playing');
+    if (scheduleInterval) { clearInterval(scheduleInterval); scheduleInterval = null; }
+    if (audioCtx) audioCtx.suspend();
+  } else {
+    audioCtx.resume();
+    musicPlaying = true;
+    musicBtn.textContent = '🎶';
+    musicBtn.classList.add('playing');
+    nextPlayTime = audioCtx.currentTime;
+    scheduleMusic();
+    scheduleInterval = setInterval(scheduleMusic, 1000);
+  }
+}
+
+// 首次交互后提示
+let interacted = false;
+function firstInteract() {
+  if (interacted) return;
+  interacted = true;
+  initAudio();
+  document.removeEventListener('click', firstInteract);
+  document.removeEventListener('touchstart', firstInteract);
+}
+document.addEventListener('click', firstInteract, {once: true});
+document.addEventListener('touchstart', firstInteract, {once: true});
 </script>
 </body>
 </html>
