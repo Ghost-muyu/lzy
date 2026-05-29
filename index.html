@@ -393,25 +393,40 @@ function startLoveWords() {
 // ===== 背景照片循环 =====
 function setupBgPhotos() {
   const layer = document.getElementById('bgLayer');
+  const bgPool = [...PHOTOS]; // 背景用不重复池
+  let bgIdx = 0;
   function addPhoto() {
     const img = document.createElement('img');
+    // 不重复轮换
+    if (bgIdx >= bgPool.length) { bgIdx = 0; shuffleArr(bgPool); }
+    img.src = PHOTO_BASE + bgPool[bgIdx++];
     img.className = 'bg-photo';
-    img.src = randomPhoto();
     img.style.animationName = Math.random() > 0.5 ? 'bgFloat1' : 'bgFloat2';
-    img.style.animationDuration = (12 + Math.random() * 10) + 's';
-    img.style.animationDelay = -(Math.random() * 12) + 's';
-    const size = 220 + Math.random() * 300;
+    img.style.animationDuration = (10 + Math.random() * 8) + 's';
+    img.style.animationDelay = -(Math.random() * 10) + 's';
+    const size = 200 + Math.random() * 350;
     img.style.width = size + 'px';
     img.style.top = (Math.random() * 75) + '%';
     img.style.left = (Math.random() * 70) + '%';
-    img.style.maxHeight = '60vh';
+    img.style.maxHeight = '55vh';
     layer.appendChild(img);
-    if (layer.children.length > 14) layer.firstChild.remove();
+    if (layer.children.length > 16) {
+      const old = layer.firstChild;
+      old.style.opacity = '0';
+      setTimeout(() => old.remove(), 1000);
+    }
   }
-  // 页面加载立即放12张
-  for (let i = 0; i < 12; i++) addPhoto();
-  // 每3秒换一张
-  setInterval(addPhoto, 3000);
+  // 立即放14张
+  for (let i = 0; i < 14; i++) addPhoto();
+  // 每1.5秒轮换一张
+  setInterval(addPhoto, 1500);
+}
+
+function shuffleArr(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
 }
 
 // ===== 粒子 =====
@@ -464,68 +479,63 @@ const $ = id => document.getElementById(id);
 const gameArea = $('gameArea');
 const startOverlay = $('startOverlay');
 
-// ===== 生成收集物（爱心为主，偶尔照片）=====
+// ===== 屏幕上照片追踪（不重复）=====
+const onScreenPhotos = new Set();
+
 function spawnCollectible() {
   if (!gameActive) return;
-  const isPhoto = Math.random() < 0.15;
 
-  if (isPhoto) {
-    const el = document.createElement('img');
-    el.src = nextPhoto();
-    el.className = 'collectible photo-bubble';
-    el.style.left = (5 + Math.random() * 80) + '%';
-    el.style.top = (10 + Math.random() * 70) + '%';
-    el.style.animationDuration = (4 + Math.random() * 4) + 's';
-    const handler = (e) => {
-      e.stopPropagation(); e.preventDefault();
-      collectItem(el, true);
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('touchstart', handler, { passive:false });
-    gameArea.appendChild(el);
-    setTimeout(() => {
-      if (el.parentNode && !el.classList.contains('popped')) {
-        el.style.opacity = '0'; el.style.transition = 'opacity 0.8s';
-        setTimeout(() => el.remove(), 800);
-      }
-    }, 10000);
-  } else {
-    const emojis = ['❤️','💕','💗','💖','💝','💘','💓','💞','🫶','💌','💟','❣️','🌹','💐','🎀','🦋'];
-    const el = document.createElement('span');
-    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-    el.className = 'collectible heart-item';
-    el.style.left = (3 + Math.random() * 85) + '%';
-    el.style.top = (8 + Math.random() * 75) + '%';
-    el.style.animationDuration = (3 + Math.random() * 3) + 's';
-    el.style.animationDelay = Math.random() * 1.5 + 's';
-    const handler = (e) => {
-      e.stopPropagation(); e.preventDefault();
-      collectItem(el, false);
-    };
-    el.addEventListener('click', handler);
-    el.addEventListener('touchstart', handler, { passive:false });
-    gameArea.appendChild(el);
-    setTimeout(() => {
-      if (el.parentNode && !el.classList.contains('popped')) {
-        el.style.opacity = '0'; el.style.transition = 'opacity 0.6s';
-        setTimeout(() => el.remove(), 600);
-      }
-    }, 6000 + Math.random() * 3000);
+  // 100% 照片气泡，不重复
+  let src;
+  for (let tries = 0; tries < 30; tries++) {
+    const candidate = nextPhoto();
+    if (!onScreenPhotos.has(candidate)) {
+      src = candidate; break;
+    }
   }
+  if (!src) src = nextPhoto(); // 全重复了就随便给一张
+  onScreenPhotos.add(src);
+
+  const el = document.createElement('img');
+  el.src = src;
+  el.className = 'collectible photo-bubble';
+  el.style.left = (3 + Math.random() * 82) + '%';
+  el.style.top = (8 + Math.random() * 72) + '%';
+  el.style.animationDuration = (3.5 + Math.random() * 4) + 's';
+  el.style.animationDelay = Math.random() * 1 + 's';
+
+  const handler = (e) => {
+    e.stopPropagation(); e.preventDefault();
+    collectItem(el, src);
+  };
+  el.addEventListener('click', handler);
+  el.addEventListener('touchstart', handler, { passive:false });
+
+  gameArea.appendChild(el);
+
+  // 10秒后消失
+  setTimeout(() => {
+    onScreenPhotos.delete(src);
+    if (el.parentNode && !el.classList.contains('popped')) {
+      el.style.opacity = '0'; el.style.transition = 'opacity 0.6s';
+      setTimeout(() => el.remove(), 600);
+    }
+  }, 10000);
 }
 
-function collectItem(el, isPhoto) {
+function collectItem(el, src) {
   if (el.classList.contains('popped')) return;
   el.classList.add('popped');
+  onScreenPhotos.delete(src);
 
   const pop = document.createElement('span');
   pop.className = 'score-pop';
-  pop.textContent = isPhoto ? '+3 📸' : '+1 ❤️';
+  pop.textContent = '+1 💕';
   pop.style.left = el.style.left; pop.style.top = el.style.top;
   gameArea.appendChild(pop);
   setTimeout(() => pop.remove(), 1000);
 
-  score += isPhoto ? 3 : 1;
+  score += 1;
   updateHUD();
   spawnBurst(el);
   setTimeout(() => el.remove(), 500);
@@ -636,6 +646,7 @@ function showFinal() {
 function startLevel() {
   const lv = LEVELS[currentLevel];
   score=0; target=lv.target; gameActive=true;
+  onScreenPhotos.clear();
 
   $('hudDate').textContent = lv.date;
   $('hudLevel').textContent = '第'+(currentLevel+1)+'关 · '+lv.name;
@@ -647,15 +658,16 @@ function startLevel() {
   $('progressWrap').style.display = 'block';
   gameArea.innerHTML = '';
 
-  // 保持屏幕上有6-12个泡泡
-  const spawnRate = 800;
-  const maxOnScreen = 6 + currentLevel * 1;
+  // 保持屏幕上有8-14个泡泡
+  const spawnRate = 700;
+  const maxOnScreen = 8 + currentLevel * 1;
   spawnTimer = setInterval(() => {
     const existing = gameArea.querySelectorAll('.collectible:not(.popped)').length;
     for (let i = existing; i < maxOnScreen; i++) spawnCollectible();
   }, spawnRate);
 
-  for (let i=0; i<6; i++) setTimeout(()=>spawnCollectible(), i*200);
+  // 初始放8个
+  for (let i=0; i<8; i++) setTimeout(()=>spawnCollectible(), i*150);
 }
 
 // ===== 开始游戏 =====
