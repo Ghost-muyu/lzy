@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>遇见你 - lzy ❤</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  width:100vw; height:100vh; height:100dvh; overflow:hidden;
+  font-family:'STKaiti','KaiTi','Microsoft YaHei',serif;
+  background:#0d0012;
+  user-select:none; -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+/* ===== 背景层 ===== */
+.bg-layer {
+  position:fixed; inset:0; z-index:0;
+  background:radial-gradient(ellipse at 50% 30%, #1a0030 0%, #0d0018 50%, #050010 100%);
+}
+.bg-photo {
+  position:absolute; object-fit:cover;
+  opacity:0.08; border-radius:24px;
+  filter:blur(3px) brightness(1.1);
+  transition:opacity 2s ease;
+  pointer-events:none;
+}
+@keyframes bgFloat1 {
+  0%,100% { transform:translateY(0) rotate(0deg) scale(1); }
+  25% { transform:translateY(-20px) rotate(2deg) scale(1.05); }
+  50% { transform:translateY(-8px) rotate(-1deg) scale(0.97); }
+  75% { transform:translateY(-25px) rotate(1deg) scale(1.03); }
+}
+@keyframes bgFloat2 {
+  0%,100% { transform:translateY(0) rotate(0deg) scale(1); }
+  33% { transform:translateY(-15px) rotate(-2deg) scale(1.04); }
+  66% { transform:translateY(-22px) rotate(1.5deg) scale(0.96); }
+}
+
+/* ===== 浮动情话层 ===== */
+.love-words-layer {
+  position:fixed; inset:0; z-index:2; pointer-events:none;
+  overflow:hidden;
+}
+.love-word {
+  position:absolute;
+  color:rgba(255,180,210,0.5);
+  font-size:18px;
+  white-space:nowrap;
+  animation:loveWordFloat linear infinite;
+  text-shadow:0 0 15px rgba(255,120,180,0.3);
+  letter-spacing:2px;
+}
+@keyframes loveWordFloat {
+  0% { transform:translateY(110vh) translateX(0); opacity:0; }
+  5% { opacity:0.55; }
+  85% { opacity:0.45; }
+  100% { transform:translateY(-10vh) translateX(30px); opacity:0; }
+}
+
+/* ===== 粒子层 ===== */
+.particles { position:fixed; inset:0; z-index:1; pointer-events:none; }
+.particle {
+  position:absolute;
+  animation:particleFloat linear infinite;
+  pointer-events:none;
+}
+@keyframes particleFloat {
+  0% { transform:translateY(105vh) rotate(0deg) scale(0); opacity:0; }
+  8% { opacity:0.7; }
+  90% { opacity:0.5; }
+  100% { transform:translateY(-10vh) rotate(360deg) scale(1.2); opacity:0; }
+}
+
+/* ===== HUD ===== */
+.hud {
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  padding:max(12px, env(safe-area-inset-top)) 16px 12px;
+  display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(180deg, rgba(10,0,20,0.95) 0%, transparent 100%);
+  pointer-events:none;
+}
+.hud-left { display:flex; flex-direction:column; gap:2px; }
+.hud-level-name {
+  font-size:14px; color:#d48bff;
+  text-shadow:0 0 8px rgba(200,100,255,0.4);
+}
+.hud-level-title {
+  font-size:20px; font-weight:bold;
+  background:linear-gradient(135deg, #ff6b9d, #c44dff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hud-right {
+  display:flex; align-items:center; gap:6px;
+  color:#ffb8d0; font-size:16px;
+}
+.hud-right .icon { font-size:22px; animation:heartBeat 1s ease-in-out infinite; }
+@keyframes heartBeat {
+  0%,100% { transform:scale(1); }
+  30% { transform:scale(1.35); }
+}
+.progress-wrap {
+  position:fixed; top:calc(max(12px, env(safe-area-inset-top)) + 70px);
+  left:50%; transform:translateX(-50%); z-index:20;
+  width:min(240px, 60vw); height:5px;
+  background:rgba(255,255,255,0.08); border-radius:3px;
+  overflow:hidden; pointer-events:none;
+}
+.progress-fill {
+  height:100%; border-radius:3px;
+  background:linear-gradient(90deg, #ff6b9d, #ff9a8b, #c44dff);
+  transition:width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:0 0 12px rgba(255,100,150,0.5);
+}
+
+/* ===== 游戏区域 ===== */
+.game-area {
+  position:fixed; inset:0; z-index:10; cursor:pointer;
+}
+
+/* 可收集元素 */
+.collectible {
+  position:absolute; cursor:pointer; z-index:12;
+  transition:transform 0.1s ease;
+  animation:itemFloat 3s ease-in-out infinite;
+  -webkit-tap-highlight-color:transparent;
+}
+.collectible:active { transform:scale(0.85); }
+.collectible.popped {
+  animation:popBurst 0.5s ease-out forwards !important;
+  pointer-events:none;
+}
+@keyframes itemFloat {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-12px); }
+}
+@keyframes popBurst {
+  0% { transform:scale(1); opacity:1; }
+  100% { transform:scale(3); opacity:0; }
+}
+
+.heart-item {
+  font-size:38px;
+  filter:drop-shadow(0 0 10px rgba(255,100,150,0.5));
+}
+.photo-bubble {
+  width:90px; height:90px; border-radius:50%;
+  border:3px solid rgba(255,160,200,0.55);
+  object-fit:cover;
+  box-shadow:0 0 25px rgba(255,100,180,0.35);
+}
+.photo-bubble.popped {
+  animation:photoPop 0.6s ease-out forwards !important;
+}
+@keyframes photoPop {
+  0% { transform:scale(1); opacity:1; }
+  60% { transform:scale(1.4); opacity:0.7; border-color:#ff6b9d; }
+  100% { transform:scale(0); opacity:0; }
+}
+
+.score-pop {
+  position:absolute; pointer-events:none; z-index:30;
+  font-size:22px; font-weight:bold;
+  color:#ff6b9d;
+  animation:scoreUp 1s ease-out forwards;
+  text-shadow:0 0 12px rgba(255,100,150,0.5);
+}
+@keyframes scoreUp {
+  0% { transform:translateY(0) scale(0.8); opacity:1; }
+  100% { transform:translateY(-70px) scale(1.4); opacity:0; }
+}
+
+/* ===== 覆盖层 ===== */
+.overlay {
+  position:fixed; inset:0; z-index:50;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(8,0,12,0.88);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  animation:fadeIn 0.6s ease;
+  padding:20px;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* 开始界面 */
+.start-screen { text-align:center; color:#ffb8d0; }
+.start-date-badge {
+  display:inline-block; padding:6px 20px;
+  border:1px solid rgba(255,150,200,0.3); border-radius:20px;
+  font-size:13px; color:#d48bff; margin-bottom:20px;
+  letter-spacing:1px;
+}
+.start-title {
+  font-size:clamp(36px, 8vw, 56px); margin-bottom:6px;
+  background:linear-gradient(135deg, #ff6b9d, #ff9a8b, #c44dff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:titleGlow 2s ease-in-out infinite;
+}
+@keyframes titleGlow {
+  0%,100% { filter:brightness(1); }
+  50% { filter:brightness(1.4); }
+}
+.start-subtitle { font-size:18px; color:#ff9ab0; margin-bottom:28px; }
+.start-memories {
+  font-size:13px; color:rgba(255,180,200,0.5);
+  margin-bottom:36px; line-height:1.8;
+}
+.btn {
+  display:inline-block; padding:15px 52px;
+  font-size:20px; font-family:inherit; letter-spacing:2px;
+  color:#fff; border:none; border-radius:50px;
+  background:linear-gradient(135deg, #ff6b9d, #c44dff);
+  cursor:pointer; transition:all 0.3s ease;
+  box-shadow:0 4px 30px rgba(255,100,150,0.4);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active { transform:scale(0.94); }
+
+/* 关卡完成 */
+.lc-wrap { text-align:center; max-width:380px; width:100%; }
+.lc-emoji { font-size:56px; margin-bottom:8px; }
+.lc-title {
+  font-size:clamp(28px, 6vw, 38px); color:#ff6b9d; margin-bottom:16px;
+  text-shadow:0 0 20px rgba(255,100,150,0.4);
+}
+.lc-msg {
+  font-size:17px; color:#ffe0ea; line-height:2;
+  margin-bottom:28px; padding:20px 16px;
+  background:rgba(255,255,255,0.04);
+  border-radius:16px;
+  border:1px solid rgba(255,150,200,0.15);
+}
+.lc-msg .quote { font-size:13px; color:#b87bff; margin-top:10px; }
+
+/* 最终界面 */
+.final-wrap { text-align:center; max-width:460px; width:100%; }
+.final-heart { font-size:72px; animation:finalBeat 1.5s ease-in-out infinite; }
+@keyframes finalBeat {
+  0%,100% { transform:scale(1); }
+  20% { transform:scale(1.18); }
+  40% { transform:scale(0.93); }
+  60% { transform:scale(1.1); }
+}
+.final-title {
+  font-size:clamp(32px, 7vw, 46px); margin:12px 0;
+  background:linear-gradient(135deg, #ff6b9d, #ff9a8b, #c44dff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.final-quote { font-size:17px; color:#ffe0ea; line-height:2.2; margin:16px 0; }
+.final-big {
+  font-size:clamp(26px, 6vw, 36px); color:#ff6b9d; margin-top:8px;
+  text-shadow:0 0 30px rgba(255,100,150,0.5); line-height:1.6;
+}
+.final-date { font-size:14px; color:#a87bff; margin-top:20px; }
+
+/* 撒花 */
+.confetti-container {
+  position:fixed; inset:0; z-index:60; pointer-events:none;
+}
+.confetti {
+  position:absolute;
+  animation:confettiFall linear forwards;
+}
+@keyframes confettiFall {
+  0% { transform:translateY(-10vh) rotate(0deg); opacity:1; }
+  100% { transform:translateY(112vh) rotate(720deg); opacity:0; }
+}
+
+@media (max-width:480px) {
+  .heart-item { font-size:30px; }
+  .photo-bubble { width:64px; height:64px; border-width:2px; }
+  .love-word { font-size:14px; }
+  .hud-level-title { font-size:17px; }
+  .hud-right { font-size:14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 背景层 -->
+<div class="bg-layer" id="bgLayer"></div>
+
+<!-- 浮动情话层 -->
+<div class="love-words-layer" id="loveWordsLayer"></div>
+
+<!-- 粒子层 -->
+<div class="particles" id="particles"></div>
+
+<!-- HUD -->
+<div class="hud" id="hud" style="display:none">
+  <div class="hud-left">
+    <span class="hud-level-name" id="hudDate"></span>
+    <span class="hud-level-title" id="hudLevel"></span>
+  </div>
+  <div class="hud-right">
+    <span class="icon">❤️</span>
+    <span id="hudScore">0</span>
+  </div>
+</div>
+<div class="progress-wrap" id="progressWrap" style="display:none">
+  <div class="progress-fill" id="progressFill" style="width:0%"></div>
+</div>
+
+<!-- 游戏区域 -->
+<div class="game-area" id="gameArea" style="display:none"></div>
+
+<!-- 开始界面 -->
+<div class="overlay" id="startOverlay">
+  <div class="start-screen">
+    <div class="start-date-badge">💕 2026.3.22 — 2026.5.29</div>
+    <div class="start-title">遇见你</div>
+    <div class="start-subtitle">❤ 心跳回忆闯关 ❤</div>
+    <div class="start-memories">收集爱心与回忆碎片<br>重温属于我们的 68 天</div>
+    <button class="btn" id="startBtn">💕 开始回忆</button>
+  </div>
+</div>
+
+<script>
+// ===== 照片列表 =====
+const PHOTOS = [
+  "微信图片_20260529155644_655_78.jpg","微信图片_20260529155645_656_78.jpg",
+  "微信图片_20260529155646_657_78.jpg","微信图片_20260529155647_658_78.jpg",
+  "微信图片_20260529155648_659_78.jpg","微信图片_20260529155648_660_78.jpg",
+  "微信图片_20260529155649_661_78.jpg","微信图片_20260529155650_662_78.jpg",
+  "微信图片_20260529155652_663_78.jpg","微信图片_20260529155653_664_78.jpg",
+  "微信图片_20260529155654_665_78.jpg","微信图片_20260529155655_666_78.jpg",
+  "微信图片_20260529155655_667_78.png","微信图片_20260529155657_668_78.jpg",
+  "微信图片_20260529155658_669_78.jpg","微信图片_20260529155659_670_78.jpg",
+  "微信图片_20260529155700_671_78.jpg","微信图片_20260529155701_672_78.jpg",
+  "微信图片_20260529155702_673_78.jpg","微信图片_20260529155703_674_78.jpg",
+  "微信图片_20260529155704_675_78.jpg","微信图片_20260529155705_676_78.jpg",
+  "微信图片_20260529155706_677_78.jpg","微信图片_20260529155707_678_78.jpg",
+  "微信图片_20260529155708_679_78.jpg","微信图片_20260529155709_680_78.jpg",
+  "微信图片_20260529155710_681_78.jpg","微信图片_20260529155711_682_78.jpg",
+  "微信图片_20260529155712_683_78.jpg","微信图片_20260529155713_684_78.jpg",
+  "微信图片_20260529155714_685_78.jpg","微信图片_20260529155715_686_78.jpg",
+  "微信图片_20260529155717_687_78.jpg","微信图片_20260529155717_688_78.jpg",
+  "微信图片_20260529155719_689_78.jpg","微信图片_20260529155720_690_78.jpg",
+  "微信图片_20260529155721_691_78.jpg","微信图片_20260529155722_692_78.jpg",
+  "微信图片_20260529155723_693_78.jpg","微信图片_20260529155724_694_78.jpg",
+  "微信图片_20260529155726_695_78.jpg","微信图片_20260529155727_696_78.jpg",
+  "微信图片_20260529155728_697_78.jpg","微信图片_20260529155730_698_78.jpg",
+  "微信图片_20260529155731_699_78.jpg","微信图片_20260529155732_700_78.jpg",
+  "微信图片_20260529155733_701_78.jpg","微信图片_20260529155734_702_78.jpg",
+  "微信图片_20260529155735_703_78.jpg","微信图片_20260529155736_704_78.jpg",
+  "微信图片_20260529155737_705_78.jpg","微信图片_20260529155738_706_78.jpg",
+  "微信图片_20260529155739_707_78.jpg","微信图片_20260529155740_708_78.jpg",
+  "微信图片_20260529155741_709_78.jpg","微信图片_20260529155742_710_78.jpg",
+  "微信图片_20260529155743_711_78.jpg","微信图片_20260529155745_712_78.jpg",
+  "微信图片_20260529155745_713_78.jpg","微信图片_20260529155746_714_78.jpg",
+  "微信图片_20260529155747_715_78.jpg","微信图片_20260529155748_716_78.jpg",
+  "微信图片_20260529155749_717_78.jpg","微信图片_20260529155750_718_78.jpg",
+  "微信图片_20260529155751_719_78.jpg","微信图片_20260529155752_720_78.jpg",
+  "微信图片_20260529155753_721_78.jpg","微信图片_20260529155754_722_78.jpg",
+  "微信图片_20260529155755_723_78.jpg","微信图片_20260529155756_724_78.jpg",
+  "微信图片_20260529155756_725_78.jpg","微信图片_20260529155758_726_78.jpg",
+  "微信图片_20260529155759_727_78.jpg","微信图片_20260529155800_728_78.jpg",
+  "微信图片_20260529155802_729_78.jpg","微信图片_20260529155803_730_78.png",
+  "微信图片_20260529155804_731_78.jpg","微信图片_20260529155805_732_78.jpg"
+];
+
+function randomPhoto() {
+  return 'assets/photos/' + PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+}
+
+// ===== 浮动情话 =====
+const LOVE_WORDS = [
+  '遇见你，是最大的幸运', '有你的每天，都像春天', '你就是我的整个宇宙',
+  '想和你一起看日落', '你的名字，我的心事', '温柔是你，浪漫是你',
+  '最好的时光，是和你在一起', '喜欢你，不讲道理', '心跳为你加速',
+  '你的笑容，是我的全世界', '陪你走遍天涯海角', '你就是我的小确幸',
+  '每一天，都比昨天更爱你', '有你陪伴，人间值得', '你是我的星辰大海',
+  '想和你虚度时光', '你一笑，世界就亮了', '光阴的故事里，都是你',
+  '把你放在心尖上', '你是人间四月天', '有你就很甜', '一眼就是你',
+  '爱是和你在一起', '你让生活有了色彩', '不小心就爱上了你',
+  '和你在一起，就是最好的日子', '世界上最美的三个字，是你的名字',
+  '余生很长，想和你一起走', '你是我的宝藏', '想做你的太阳',
+  '我的快乐，都是关于你', '山河不及你', '你是我的满心欢喜',
+  '始于初见，止于终老', '万物皆甜，而你胜过万物',
+  '春风十里，不如你', '你是最美的意外', '有生之年，欣喜相逢',
+  '希望余生，全都是你', '你是我疲惫生活里的温柔梦想',
+  '所爱隔山海，山海皆可平', '你的眼睛里有星星',
+  '愿得一人心，白首不相离', '承蒙你出现，够我喜欢好多年',
+];
+
+function startLoveWords() {
+  const layer = document.getElementById('loveWordsLayer');
+  function spawnWord() {
+    const el = document.createElement('span');
+    el.className = 'love-word';
+    el.textContent = LOVE_WORDS[Math.floor(Math.random() * LOVE_WORDS.length)];
+    el.style.left = (2 + Math.random() * 80) + '%';
+    el.style.fontSize = (13 + Math.random() * 12) + 'px';
+    el.style.animationDuration = (15 + Math.random() * 25) + 's';
+    layer.appendChild(el);
+    setTimeout(() => el.remove(), 40000);
+  }
+  // 初始多放一些
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => spawnWord(), i * 800);
+  }
+  setInterval(spawnWord, 3500);
+}
+
+// ===== 背景照片循环 =====
+function setupBgPhotos() {
+  const layer = document.getElementById('bgLayer');
+  let idx = 0;
+  function addPhoto() {
+    const img = document.createElement('img');
+    img.className = 'bg-photo';
+    img.src = randomPhoto();
+    img.style.animationName = Math.random() > 0.5 ? 'bgFloat1' : 'bgFloat2';
+    img.style.animationDuration = (18 + Math.random() * 16) + 's';
+    img.style.animationDelay = -(Math.random() * 20) + 's';
+    const size = 160 + Math.random() * 240;
+    img.style.width = size + 'px';
+    img.style.top = (Math.random() * 85) + '%';
+    img.style.left = (Math.random() * 80) + '%';
+    if (idx < 8) {
+      img.style.opacity = '0.06';
+    }
+    layer.appendChild(img);
+    idx++;
+    // 最多保留 10 张
+    if (layer.children.length > 10) {
+      layer.firstChild.remove();
+    }
+  }
+  for (let i = 0; i < 8; i++) addPhoto();
+  setInterval(addPhoto, 6000);
+}
+
+// ===== 粒子 =====
+function setupParticles() {
+  const container = document.getElementById('particles');
+  const emojis = ['💕','✨','💗','🌟','💖','🫧','💝','🌸','💘','🦋','💓','💞'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = Math.random()*100 + '%';
+    p.style.fontSize = (10 + Math.random()*18) + 'px';
+    p.style.animationDuration = (10 + Math.random()*22) + 's';
+    p.style.animationDelay = Math.random()*18 + 's';
+    container.appendChild(p);
+  }
+}
+
+// ===== 游戏数据 =====
+const LEVELS = [
+  { name:'初见', date:'2026.3.22', target:10,
+    msg:'那一天，我们的故事开始了。\n世界很大，但偏偏让我遇见了你。\n你的名字，从此刻在了我心里。\n每一次想起初见，都会不由自主地微笑。',
+    quote:'——《初见》· 3月22日' },
+  { name:'相知', date:'2026.4.5', target:15,
+    msg:'每天醒来第一件事，就是看你的消息。\n你发的每一个字，每一张照片，\n都让平凡的日子开出花来。\n我确定，我已经习惯有你了。',
+    quote:'——《相知》· 4月初' },
+  { name:'心动', date:'2026.4.20', target:20,
+    msg:'你的笑声，是世上最好听的声音。\n你的名字，是我写不腻的诗。\n和你在一起的分分秒秒，\n都像电影里最美的画面，想要永远定格。',
+    quote:'——《心动》· 4月中' },
+  { name:'甜蜜', date:'2026.5.5', target:25,
+    msg:'有你的日子，每一天都是甜的。\n春天的风，夏天的雨，秋天的月，冬天的雪，\n都不如你轻轻喊我的名字。\n谢谢你，出现在我的生命里。',
+    quote:'——《甜蜜》· 5月初' },
+  { name:'永远', date:'2026.5.29', target:30,
+    msg:'从3月22日到今天，68天。\n不长不短，却是我人生中最美的68天。\n我们的故事才刚刚开始，\n未来的每一天，都想和你一起走过。',
+    quote:'——《永远》· 5月29日' }
+];
+
+const FINAL_WORDS = [
+  '我想对你说的话，都藏在这 68 天里。',
+  '但最重要的——',
+];
+
+let currentLevel = 0;
+let score = 0;
+let target = 0;
+let gameActive = false;
+let spawnTimer = null;
+
+const $ = id => document.getElementById(id);
+const gameArea = $('gameArea');
+const startOverlay = $('startOverlay');
+
+// ===== 生成收集物 =====
+function spawnCollectible() {
+  if (!gameActive) return;
+  const isPhoto = Math.random() < 0.3;
+  const el = document.createElement(isPhoto ? 'img' : 'span');
+
+  if (isPhoto) {
+    el.src = randomPhoto();
+    el.className = 'collectible photo-bubble';
+    el.style.left = (5 + Math.random() * 80) + '%';
+    el.style.top = (10 + Math.random() * 70) + '%';
+    el.style.animationDuration = (2.8 + Math.random() * 3.5) + 's';
+  } else {
+    const hearts = ['❤️','💕','💗','💖','💝','💘','💓','💞','🫶','💌','💟','❣️'];
+    el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+    el.className = 'collectible heart-item';
+    el.style.left = (3 + Math.random() * 85) + '%';
+    el.style.top = (8 + Math.random() * 75) + '%';
+    el.style.animationDuration = (2.2 + Math.random() * 3.5) + 's';
+    el.style.animationDelay = Math.random() * 1.5 + 's';
+  }
+
+  const handler = (e) => {
+    e.stopPropagation(); e.preventDefault();
+    collectItem(el, isPhoto);
+  };
+  el.addEventListener('click', handler);
+  el.addEventListener('touchstart', handler, { passive:false });
+
+  gameArea.appendChild(el);
+
+  setTimeout(() => {
+    if (el.parentNode && !el.classList.contains('popped')) {
+      el.style.opacity = '0'; el.style.transition = 'opacity 0.6s';
+      setTimeout(() => el.remove(), 600);
+    }
+  }, 6000 + Math.random() * 3000);
+}
+
+function collectItem(el, isPhoto) {
+  if (el.classList.contains('popped')) return;
+  el.classList.add('popped');
+
+  const pop = document.createElement('span');
+  pop.className = 'score-pop';
+  pop.textContent = isPhoto ? '+3 📸' : '+1 ❤️';
+  pop.style.left = el.style.left; pop.style.top = el.style.top;
+  gameArea.appendChild(pop);
+  setTimeout(() => pop.remove(), 1000);
+
+  score += isPhoto ? 3 : 1;
+  updateHUD();
+  spawnBurst(el);
+  setTimeout(() => el.remove(), 500);
+
+  if (score >= target) levelComplete();
+}
+
+function spawnBurst(el) {
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+  for (let i=0; i<8; i++) {
+    const p = document.createElement('span');
+    p.textContent = ['✨','💕','🌟','💗','🌸'][i%5];
+    p.style.cssText = `position:fixed;z-index:40;pointer-events:none;left:${cx}px;top:${cy}px;font-size:14px;transition:all 0.9s cubic-bezier(0,0.7,0.3,1);opacity:1;`;
+    document.body.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.transform = `translate(${(Math.random()-0.5)*100}px,${(Math.random()-0.5)*100}px) scale(0)`;
+      p.style.opacity = '0';
+    });
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+
+function updateHUD() {
+  $('hudScore').textContent = score;
+  $('progressFill').style.width = Math.min(100, (score/target)*100) + '%';
+}
+
+// ===== 撒花 =====
+function spawnConfetti(count=50) {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  const items = ['❤️','💕','💗','✨','🌟','💖','🌸','🎀','💝','💘','💗','💓'];
+  for (let i=0; i<count; i++) {
+    const el = document.createElement('span');
+    el.className = 'confetti';
+    el.textContent = items[Math.floor(Math.random()*items.length)];
+    el.style.left = Math.random()*100 + '%';
+    el.style.top = -(Math.random()*15) + 'vh';
+    el.style.fontSize = (14 + Math.random()*22) + 'px';
+    el.style.animationDuration = (2 + Math.random()*4) + 's';
+    el.style.animationDelay = Math.random()*2 + 's';
+    container.appendChild(el);
+  }
+  setTimeout(() => container.remove(), 7000);
+}
+
+// ===== 关卡完成 =====
+function levelComplete() {
+  gameActive = false; clearInterval(spawnTimer);
+  spawnConfetti(60);
+
+  const lv = LEVELS[currentLevel];
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="lc-wrap">
+      <div class="lc-emoji">${['🌸','💗','💖','💝','💘'][currentLevel]}</div>
+      <div class="lc-title">${lv.name} · 完成！</div>
+      <div class="lc-msg">
+        ${lv.msg.replace(/\n/g,'<br>')}
+        <div class="quote">${lv.quote}</div>
+      </div>
+      <button class="btn" id="nextBtn">
+        ${currentLevel < LEVELS.length-1 ? '💕 下一关' : '💖 揭晓'}
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#nextBtn').addEventListener('click', () => {
+    overlay.remove();
+    document.querySelectorAll('.confetti-container').forEach(c=>c.remove());
+    if (currentLevel < LEVELS.length-1) { currentLevel++; startLevel(); }
+    else showFinal();
+  });
+}
+
+// ===== 最终界面 =====
+function showFinal() {
+  gameActive = false;
+  gameArea.style.display = 'none';
+  $('hud').style.display = 'none';
+  $('progressWrap').style.display = 'none';
+
+  for (let i=0; i<3; i++) setTimeout(() => spawnConfetti(70), i*1200);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="final-wrap">
+      <div class="final-heart">💖</div>
+      <div class="final-title">我们的故事</div>
+      <div class="final-quote">
+        ${FINAL_WORDS.join('<br>')}
+      </div>
+      <div class="final-big">我爱你，lzy<br>一直在一起 💕</div>
+      <div class="final-date">2026.3.22 — 2026.5.29 · 未完待续</div>
+      <button class="btn" style="margin-top:20px" onclick="location.reload()">🔄 再玩一次</button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  let cc=0;
+  const iv = setInterval(() => { spawnConfetti(50); if(++cc>6) clearInterval(iv); }, 2200);
+}
+
+// ===== 开始关卡 =====
+function startLevel() {
+  const lv = LEVELS[currentLevel];
+  score=0; target=lv.target; gameActive=true;
+
+  $('hudDate').textContent = lv.date;
+  $('hudLevel').textContent = '第'+(currentLevel+1)+'关 · '+lv.name;
+  $('hudScore').textContent = '0';
+  $('progressFill').style.width = '0%';
+
+  gameArea.style.display = 'block';
+  $('hud').style.display = 'flex';
+  $('progressWrap').style.display = 'block';
+  gameArea.innerHTML = '';
+
+  const spawnRate = Math.max(500, 1400 - currentLevel*180);
+  spawnTimer = setInterval(() => {
+    const existing = gameArea.querySelectorAll('.collectible:not(.popped)').length;
+    const desired = 7 + currentLevel * 2;
+    for (let i=existing; i<desired; i++) spawnCollectible();
+  }, spawnRate);
+
+  for (let i=0; i<6+currentLevel; i++) setTimeout(()=>spawnCollectible(), i*180);
+}
+
+// ===== 开始游戏 =====
+function startGame() {
+  startOverlay.style.display = 'none';
+  currentLevel = 0;
+  startLevel();
+}
+
+// ===== 空白处点击 =====
+gameArea.addEventListener('click', (e) => {
+  if (!gameActive || e.target !== gameArea) return;
+  const h = document.createElement('span');
+  h.textContent = '💕';
+  h.style.cssText = `position:fixed;z-index:30;pointer-events:none;left:${e.clientX-10}px;top:${e.clientY-10}px;font-size:22px;animation:scoreUp 1.5s ease-out forwards;`;
+  document.body.appendChild(h);
+  setTimeout(()=>h.remove(), 1600);
+});
+
+// ===== 启动 =====
+$('startBtn').addEventListener('click', startGame);
+$('startBtn').addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
+
+setupBgPhotos();
+setupParticles();
+startLoveWords();
+</script>
+</body>
+</html>
