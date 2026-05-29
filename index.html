@@ -344,49 +344,89 @@ const $=id=>document.getElementById(id);
 const gameArea=$('gameArea'), startOverlay=$('startOverlay');
 
 // ===== 生成收集物 =====
+// 照片：先在屏幕外加载完毕，再放入DOM
+function spawnPhotoBubble() {
+  if (!gameActive) return;
+  const src = nextPhoto();
+  onScreen.add(src);
+  const img = new Image();
+  img.onload = () => {
+    if (!gameActive || !onScreen.has(src)) return;
+    addPhotoToScreen(img, src);
+  };
+  img.onerror = () => {
+    if (!gameActive || !onScreen.has(src)) return;
+    addPhotoToScreen(img, src);
+  };
+  // 超时兜底：2秒后还没加载完也放上去（避免永远不出现）
+  setTimeout(() => {
+    if (!gameActive || !onScreen.has(src)) return;
+    if (!img.parentNode) addPhotoToScreen(img, src);
+  }, 2000);
+  img.src = src;
+}
+
+function addPhotoToScreen(img, src) {
+  if (!gameActive) { onScreen.delete(src); return; }
+  const sizes = [56, 64, 72, 80, 88, 96]; // 大小不一
+  const sz = sizes[Math.floor(Math.random() * sizes.length)];
+  img.className = 'collectible photo-bubble';
+  img.style.width = img.style.height = sz + 'px';
+  img.style.left = (2 + Math.random() * 82) + '%';
+  img.style.top = (8 + Math.random() * 70) + '%';
+  img.style.animationDuration = (3.5 + Math.random() * 3) + 's';
+  const h = (e) => { e.stopPropagation(); e.preventDefault(); collectItem(img, src, true); };
+  img.addEventListener('click', h);
+  img.addEventListener('touchstart', h, { passive: false });
+  gameArea.appendChild(img);
+  // 淡入效果
+  img.style.opacity = '0';
+  requestAnimationFrame(() => { img.style.opacity = '1'; img.style.transition = 'opacity 0.4s'; });
+
+  setTimeout(() => {
+    onScreen.delete(src);
+    if (img.parentNode && !img.classList.contains('popped')) {
+      img.style.opacity = '0'; img.style.transition = 'opacity 0.6s';
+      setTimeout(() => img.remove(), 600);
+    }
+  }, 10000 + Math.random() * 3000);
+}
+
+function spawnHeartItem() {
+  if (!gameActive) return;
+  const hearts = ['❤️', '💕', '💗', '💖', '💝', '💘', '💓', '💌', '🌹', '✨'];
+  const el = document.createElement('span');
+  el.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+  el.className = 'collectible heart-item';
+  el.style.left = (3 + Math.random() * 85) + '%';
+  el.style.top = (8 + Math.random() * 75) + '%';
+  el.style.fontSize = (28 + Math.random() * 20) + 'px';
+  el.style.animationDuration = (3 + Math.random() * 3) + 's';
+  el.style.animationDelay = Math.random() * 1.5 + 's';
+  const h = (e) => { e.stopPropagation(); e.preventDefault(); collectItem(el, null, false); };
+  el.addEventListener('click', h);
+  el.addEventListener('touchstart', h, { passive: false });
+  gameArea.appendChild(el);
+  setTimeout(() => {
+    if (el.parentNode && !el.classList.contains('popped')) {
+      el.style.opacity = '0'; el.style.transition = 'opacity 0.5s';
+      setTimeout(() => el.remove(), 500);
+    }
+  }, 6000 + Math.random() * 3000);
+}
+
 function spawnCollectible() {
   if (!gameActive) return;
-  const isPhoto = true; // 100%照片
+  const n = gameArea.querySelectorAll('.collectible:not(.popped)').length;
+  if (n >= 8) return; // 最多8个
 
-  if (isPhoto) {
-    const src = nextPhoto(); onScreen.add(src);
-    const el = document.createElement('img');
-    el.src = src;
-    el.className = 'collectible photo-bubble';
-    el.style.left = (3+Math.random()*82)+'%';
-    el.style.top = (8+Math.random()*72)+'%';
-    el.style.animationDuration = (3+Math.random()*3)+'s';
-    const h = (e) => { e.stopPropagation(); e.preventDefault(); collectItem(el, src, true); };
-    el.addEventListener('click', h);
-    el.addEventListener('touchstart', h, {passive:false});
-    gameArea.appendChild(el);
-    setTimeout(() => {
-      onScreen.delete(src);
-      if (el.parentNode && !el.classList.contains('popped')) {
-        el.style.opacity='0'; el.style.transition='opacity 0.5s';
-        setTimeout(()=>el.remove(), 500);
-      }
-    }, 9000);
+  // 60%照片 40%爱心
+  if (Math.random() < 0.6) {
+    spawnPhotoBubble();
   } else {
-    const hearts = ['❤️','💕','💗','💖','💝','💘','💓','💞','💌','💟','❣️','🌹','💐','🎀','🦋','✨'];
-    const el = document.createElement('span');
-    el.textContent = hearts[Math.floor(Math.random()*hearts.length)];
-    el.className = 'collectible heart-item';
-    el.style.left = (3+Math.random()*85)+'%';
-    el.style.top = (8+Math.random()*75)+'%';
-    el.style.animationDuration = (2.5+Math.random()*3)+'s';
-    el.style.animationDelay = Math.random()*1.5+'s';
-    const h = (e) => { e.stopPropagation(); e.preventDefault(); collectItem(el, null, false); };
-    el.addEventListener('click', h);
-    el.addEventListener('touchstart', h, {passive:false});
-    gameArea.appendChild(el);
-    setTimeout(() => {
-      if (el.parentNode && !el.classList.contains('popped')) {
-        el.style.opacity='0'; el.style.transition='opacity 0.5s';
-        setTimeout(()=>el.remove(), 500);
-      }
-    }, 6000+Math.random()*2000);
+    spawnHeartItem();
   }
+}
 }
 
 function collectItem(el, src, isPhoto) {
@@ -495,13 +535,14 @@ function startLevel() {
   gameArea.style.display='block'; $('hud').style.display='flex'; $('progressWrap').style.display='block';
   gameArea.innerHTML='';
 
-  const maxOnScreen = 6 + currentLevel;
+  // 慢节奏生成，每1.8秒检查一次
   spawnTimer = setInterval(() => {
-    const n = gameArea.querySelectorAll('.collectible:not(.popped)').length;
-    for (let i=n; i<maxOnScreen; i++) spawnCollectible();
-  }, 900);
+    spawnCollectible();
+    spawnCollectible();
+  }, 1800);
 
-  for (let i=0; i<5; i++) setTimeout(()=>spawnCollectible(), i*250);
+  // 初始只出3-4个
+  for (let i = 0; i < 4; i++) setTimeout(() => spawnCollectible(), i * 400);
 }
 
 // ===== 后台预加载（预热缓存，不阻塞游戏）=====
