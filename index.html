@@ -231,17 +231,7 @@ body {
 <button class="music-btn" id="musicBtn" title="音乐" onclick="toggleMusic()">🎵</button>
 
 <div class="overlay" id="startOverlay">
-  <!-- 预加载画面 -->
-  <div class="loading-screen" id="loadingScreen">
-    <div class="loading-heart">💖</div>
-    <div class="loading-text">正在准备我们的回忆...</div>
-    <div class="loading-progress-wrap">
-      <div class="loading-progress-fill" id="loadingProgressFill" style="width:0%"></div>
-    </div>
-    <div class="loading-count" id="loadingCount">0 / 78</div>
-  </div>
-  <!-- 开始画面（预加载完才显示） -->
-  <div class="start-screen" id="startScreen" style="display:none">
+  <div class="start-screen">
     <div class="start-date-badge">💕 2026.3.22 — 2026.5.29</div>
     <div class="start-title">遇见你</div>
     <div class="start-subtitle">❤ 心跳回忆闯关 ❤</div>
@@ -514,47 +504,16 @@ function startLevel() {
   for (let i=0; i<5; i++) setTimeout(()=>spawnCollectible(), i*250);
 }
 
-// ===== 预加载所有照片 =====
-let preloadedImages = {};
-function preloadAllPhotos() {
-  const total = PHOTOS.length;
-  let loaded = 0;
-  const progressFill = document.getElementById('loadingProgressFill');
-  const loadingCount = document.getElementById('loadingCount');
-
-  return new Promise((resolve) => {
-    PHOTOS.forEach((filename) => {
-      const src = PB + filename;
-      const img = new Image();
-      img.onload = () => {
-        loaded++;
-        preloadedImages[src] = img;
-        const pct = Math.round((loaded / total) * 100);
-        progressFill.style.width = pct + '%';
-        loadingCount.textContent = loaded + ' / ' + total;
-        if (loaded >= total) resolve();
-      };
-      img.onerror = () => {
-        loaded++;
-        loadingCount.textContent = loaded + ' / ' + total;
-        if (loaded >= total) resolve();
-      };
-      img.src = src;
-    });
-  });
-}
-
-// 预加载完成后显示开始按钮
-(async function init() {
-  setupParticles();
-  startLoveWords();
-  await preloadAllPhotos();
-  // 切到开始画面
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('startScreen').style.display = '';
-})();
+// ===== 后台预加载（预热缓存，不阻塞游戏）=====
+PHOTOS.forEach((filename) => {
+  const img = new Image();
+  img.src = PB + filename;
+});
 
 function startGame() { startOverlay.style.display='none'; currentLevel=0; startLevel(); }
+
+setupParticles();
+startLoveWords();
 
 gameArea.addEventListener('click', (e)=>{
   if (!gameActive || e.target!==gameArea) return;
