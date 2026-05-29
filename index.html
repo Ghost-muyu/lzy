@@ -128,6 +128,22 @@ body {
   border:1px solid rgba(255,150,200,0.3); border-radius:20px;
   font-size:13px; color:#d48bff; margin-bottom:20px; letter-spacing:1px;
 }
+
+/* 预加载界面 */
+.loading-screen { text-align:center; color:#ffb8d0; }
+.loading-heart { font-size:56px; animation:finalBeat 1.5s ease-in-out infinite; margin-bottom:16px; }
+.loading-text { font-size:16px; color:#ff9ab0; margin-bottom:16px; }
+.loading-progress-wrap {
+  width:min(260px, 65vw); height:8px; margin:0 auto 8px;
+  background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden;
+}
+.loading-progress-fill {
+  height:100%; border-radius:4px;
+  background:linear-gradient(90deg, #ff6b9d, #c44dff);
+  transition:width 0.3s ease;
+  box-shadow:0 0 12px rgba(255,100,150,0.5);
+}
+.loading-count { font-size:13px; color:rgba(255,180,200,0.6); }
 .start-title {
   font-size:clamp(36px, 8vw, 56px); margin-bottom:6px;
   background:linear-gradient(135deg, #ff6b9d, #ff9a8b, #c44dff);
@@ -215,7 +231,17 @@ body {
 <button class="music-btn" id="musicBtn" title="音乐" onclick="toggleMusic()">🎵</button>
 
 <div class="overlay" id="startOverlay">
-  <div class="start-screen">
+  <!-- 预加载画面 -->
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-heart">💖</div>
+    <div class="loading-text">正在准备我们的回忆...</div>
+    <div class="loading-progress-wrap">
+      <div class="loading-progress-fill" id="loadingProgressFill" style="width:0%"></div>
+    </div>
+    <div class="loading-count" id="loadingCount">0 / 78</div>
+  </div>
+  <!-- 开始画面（预加载完才显示） -->
+  <div class="start-screen" id="startScreen" style="display:none">
     <div class="start-date-badge">💕 2026.3.22 — 2026.5.29</div>
     <div class="start-title">遇见你</div>
     <div class="start-subtitle">❤ 心跳回忆闯关 ❤</div>
@@ -488,6 +514,46 @@ function startLevel() {
   for (let i=0; i<5; i++) setTimeout(()=>spawnCollectible(), i*250);
 }
 
+// ===== 预加载所有照片 =====
+let preloadedImages = {};
+function preloadAllPhotos() {
+  const total = PHOTOS.length;
+  let loaded = 0;
+  const progressFill = document.getElementById('loadingProgressFill');
+  const loadingCount = document.getElementById('loadingCount');
+
+  return new Promise((resolve) => {
+    PHOTOS.forEach((filename) => {
+      const src = PB + filename;
+      const img = new Image();
+      img.onload = () => {
+        loaded++;
+        preloadedImages[src] = img;
+        const pct = Math.round((loaded / total) * 100);
+        progressFill.style.width = pct + '%';
+        loadingCount.textContent = loaded + ' / ' + total;
+        if (loaded >= total) resolve();
+      };
+      img.onerror = () => {
+        loaded++;
+        loadingCount.textContent = loaded + ' / ' + total;
+        if (loaded >= total) resolve();
+      };
+      img.src = src;
+    });
+  });
+}
+
+// 预加载完成后显示开始按钮
+(async function init() {
+  setupParticles();
+  startLoveWords();
+  await preloadAllPhotos();
+  // 切到开始画面
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('startScreen').style.display = '';
+})();
+
 function startGame() { startOverlay.style.display='none'; currentLevel=0; startLevel(); }
 
 gameArea.addEventListener('click', (e)=>{
@@ -501,9 +567,6 @@ gameArea.addEventListener('click', (e)=>{
 
 $('startBtn').addEventListener('click', startGame);
 $('startBtn').addEventListener('touchend', (e)=>{ e.preventDefault(); startGame(); });
-
-setupParticles();
-startLoveWords();
 
 // ===== 背景音乐（内置舒缓钢琴音效）=====
 let musicPlaying = false, audioCtx = null, musicGain = null;
